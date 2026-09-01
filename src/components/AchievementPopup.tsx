@@ -1,0 +1,1 @@
+export function AchievementPopup(){return <div className="ach-popup"><span>🏆</span><div><b>Achievement Unlocked!</b><small>Quest Master · Complete 10 quests</small></div><strong>+50 XP</strong></div>}
