@@ -1,0 +1,55 @@
+/* Responsive layout: the interface is no longer locked to a phone viewport. */
+html, body, #root { width: 100%; min-height: 100%; }
+body { overflow-x: hidden; }
+.app-shell { width: 100%; min-height: 100vh; padding: 0; align-items: stretch; }
+.phone-frame { width: 100%; max-width: none; height: 100vh; min-height: 100vh; border-radius: 0; box-shadow: none; }
+.prototype-caption, .prototype-subcaption { display: none; }
+
+/* Comfortable desktop canvas */
+@media (min-width: 768px) {
+  .phone-frame { overflow: hidden; }
+  .sc { max-width: none; }
+  .scr-scroll, .page-with-back { width: min(1120px, 100%); margin-inline: auto; }
+  .h-hdr, .page-head { padding-top: 42px; }
+  .h-hdr { padding-inline: clamp(24px, 4vw, 64px); }
+  .ai-banner, .xpc, .qc, .challenge, .streak, .overall, .panel { margin-inline: clamp(24px, 4vw, 64px); }
+  .ai-banner, .qc { width: auto; }
+  .stat-row { margin-inline: clamp(24px, 4vw, 64px); }
+  .sh { padding-inline: clamp(24px, 4vw, 64px); }
+  .agrid, .inv-grid, .ach-grid { padding-inline: clamp(24px, 4vw, 64px); }
+  .agrid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .inv-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .ach-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .form { width: min(520px, calc(100% - 48px)); margin-inline: auto; }
+  .lg-top { padding-top: 64px; }
+  .bnav { left: 50%; transform: translateX(-50%); width: min(720px, calc(100% - 48px)); border-radius: 18px 18px 0 0; }
+}
+
+/* Tablet: retain the compact RPG proportions without the fake phone frame. */
+@media (min-width: 600px) and (max-width: 767px) {
+  .agrid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .inv-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .ach-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .form { width: min(560px, calc(100% - 64px)); margin-inline: auto; }
+}
+
+/* Small phones: preserve touch-friendly controls and avoid horizontal overflow. */
+@media (max-width: 599px) {
+  .sc { width: 100%; }
+  .scr-scroll, .page-with-back { width: 100%; }
+  .h-hdr, .page-head, .back { padding-top: max(28px, env(safe-area-inset-top)); }
+  .bnav { padding-bottom: max(8px, env(safe-area-inset-bottom)); }
+  .agrid { grid-template-columns: 1fr 1fr; }
+  .inv-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ach-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .btn-p, .det-btn, .gold-btn, .ai-banner, .qc { min-height: 48px; }
+}
+
+/* Wide screens: give the application a proper dashboard feel. */
+@media (min-width: 1200px) {
+  .scr-scroll, .page-with-back { width: min(1200px, 100%); }
+  .agrid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .inv-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .ach-grid { grid-template-columns: repeat(8, minmax(0, 1fr)); }
+  .xpc { padding: 22px; }
+}
