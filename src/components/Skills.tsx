@@ -1,0 +1,2 @@
+import { PageHead } from './PageHead'
+export function Skills(){return <section className="sc"><div className="scr-scroll"><PageHead title="Skill Tree" sub="Unlock abilities as your hero grows."/><div className="skill-points">✦ <b>3 Skill Points</b> available</div><div className="tree">{['🧠 Focus Mastery','🎯 Deep Work','⚔️ Discipline','🔥 Momentum','📖 Knowledge'].map((x,i)=><div className={i<3?'node unlocked':'node'} key={x}><span>{x.split(' ')[0]}</span><b>{x.substring(2)}</b><small>{i<3?'UNLOCKED':'REQUIRES LEVEL '+(13+i)}</small></div>)}</div></div></section>}
