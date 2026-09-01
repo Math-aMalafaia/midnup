@@ -1,0 +1,260 @@
+-- MindUp database foundation
+-- Run this file in Supabase SQL Editor.
+
+create table if not exists public.profiles (
+  id uuid primary key references auth.users(id) on delete cascade,
+  username text not null,
+  avatar text default '🧙',
+  level integer not null default 1,
+  total_xp integer not null default 0,
+  xp_in_level integer not null default 0,
+  xp_to_next_level integer not null default 500,
+  streak_days integer not null default 0,
+  completion_rate numeric(5,2) not null default 0,
+  rank text not null default 'Novice',
+  gems integer not null default 2450,
+  tickets integer not null default 8,
+  skill_points integer not null default 3,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.attributes (
+  id bigint generated always as identity primary key,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  name text not null,
+  level integer not null default 1,
+  percentage integer not null default 0,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique(user_id, name)
+);
+
+create table if not exists public.quests (
+  id bigint generated always as identity primary key,
+  slug text unique not null,
+  title text not null,
+  description text,
+  category text not null default 'general',
+  difficulty text not null default 'easy',
+  xp_reward integer not null default 10,
+  verification_type text not null default 'none',
+  hero_bg text,
+  icon text default '⚔️',
+  active boolean not null default true,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.quest_checklist_items (
+  id bigint generated always as identity primary key,
+  quest_id bigint not null references public.quests(id) on delete cascade,
+  description text not null,
+  position integer not null default 0
+);
+
+create table if not exists public.user_quests (
+  id bigint generated always as identity primary key,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  quest_id bigint not null references public.quests(id) on delete cascade,
+  status text not null default 'available',
+  progress integer not null default 0,
+  started_at timestamptz,
+  completed_at timestamptz,
+  xp_earned integer not null default 0,
+  created_at timestamptz not null default now(),
+  unique(user_id, quest_id)
+);
+
+create table if not exists public.skills (
+  id bigint generated always as identity primary key,
+  name text unique not null,
+  description text,
+  icon text default '🧠',
+  required_level integer not null default 1,
+  cost integer not null default 1,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.user_skills (
+  user_id uuid not null references auth.users(id) on delete cascade,
+  skill_id bigint not null references public.skills(id) on delete cascade,
+  skill_level integer not null default 1,
+  unlocked_at timestamptz not null default now(),
+  primary key(user_id, skill_id)
+);
+
+create table if not exists public.equipment (
+  id bigint generated always as identity primary key,
+  name text unique not null,
+  description text,
+  icon text default '🛡️',
+  rarity text not null default 'common',
+  type text not null default 'item',
+  bonuses jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.user_equipment (
+  id bigint generated always as identity primary key,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  equipment_id bigint not null references public.equipment(id) on delete cascade,
+  quantity integer not null default 1,
+  equipped boolean not null default false,
+  acquired_at timestamptz not null default now(),
+  unique(user_id, equipment_id)
+);
+
+create table if not exists public.achievements (
+  id bigint generated always as identity primary key,
+  name text unique not null,
+  description text,
+  icon text default '🏆',
+  requirement jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.user_achievements (
+  user_id uuid not null references auth.users(id) on delete cascade,
+  achievement_id bigint not null references public.achievements(id) on delete cascade,
+  unlocked_at timestamptz not null default now(),
+  primary key(user_id, achievement_id)
+);
+
+create table if not exists public.gacha_items (
+  id bigint generated always as identity primary key,
+  name text unique not null,
+  description text,
+  icon text not null,
+  rarity text not null,
+  color text,
+  weight numeric not null
+);
+
+create table if not exists public.gacha_history (
+  id bigint generated always as identity primary key,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  gacha_item_id bigint not null references public.gacha_items(id),
+  created_at timestamptz not null default now()
+);
+
+insert into public.quests (slug,title,description,category,difficulty,xp_reward,verification_type,hero_bg,icon)
+values
+('study','Deep Study Session','Study a focused topic without distractions and consolidate what you learned.','Knowledge','Medium',120,'quiz','linear-gradient(135deg,#243f6b,#5a3c88)','📚'),
+('exercise','Morning Training','Complete your planned training session and build your Energy attribute.','Energy','Easy',90,'checklist','linear-gradient(135deg,#174d38,#2b7654)','⚔️'),
+('focus','Focus Sprint','Complete a distraction-free focus sprint and protect your streak.','Focus','Medium',100,'checklist','linear-gradient(135deg,#35236a,#244c7c)','🎯'),
+('journal','Daily Reflection','Reflect on the day, capture a lesson, and prepare your next move.','Resilience','Easy',70,'photo','linear-gradient(135deg,#553b24,#855d2d)','📖')
+on conflict (slug) do update set title=excluded.title,description=excluded.description,category=excluded.category,difficulty=excluded.difficulty,xp_reward=excluded.xp_reward,verification_type=excluded.verification_type,hero_bg=excluded.hero_bg,icon=excluded.icon;
+
+insert into public.quest_checklist_items (quest_id,description,position)
+select q.id,v.description,v.position from public.quests q join (values
+('exercise','Warm up for 5 minutes',1),('exercise','Complete the main workout',2),('exercise','Cool down and stretch',3),
+('focus','Define one clear goal',1),('focus','Work without distractions',2),('focus','Review your result',3)
+) v(slug,description,position) on v.slug=q.slug
+where not exists (select 1 from public.quest_checklist_items x where x.quest_id=q.id and x.position=v.position);
+
+insert into public.skills(name,description,icon,required_level,cost) values
+('Focus Mastery','Improve your ability to protect deep-work time.','🧠',1,1),
+('Deep Work','Increase rewards from focused quests.','🎯',1,1),
+('Discipline','Build consistency through repeated completions.','⚔️',1,1),
+('Momentum','Increase streak rewards.','🔥',13,2),
+('Knowledge','Improve Knowledge attribute gains.','📖',14,2)
+on conflict (name) do nothing;
+
+insert into public.equipment(name,description,icon,rarity,type,bonuses) values
+('Focus Blade','+15% Focus when equipped','🗡️','rare','weapon','{"focus":15}'),
+('Orb of Clarity','+20% XP on Focus tasks','🔮','epic','focus','{"focus_xp":20}'),
+('Ring of Discipline','Improves consistency rewards','💍','epic','ring','{"discipline":10}'),
+('Shield of Resolve','Protects one streak day','🛡️','rare','armor','{"streak_protection":1}'),
+('Tome of Wisdom','Gain +5 Knowledge XP daily','📜','uncommon','book','{"knowledge_xp":5}'),
+('Energy Elixir','Restore 20 Energy points','🧪','common','consumable','{"energy":20}')
+on conflict (name) do nothing;
+
+insert into public.achievements(name,description,icon,requirement) values
+('Quest Master','Complete 20 quests.','🏆','{"quests_completed":20}'),
+('On Fire','Reach a 7 day streak.','🔥','{"streak_days":7}'),
+('Warrior','Complete 10 Energy quests.','⚔️','{"category":"Energy","quests_completed":10}'),
+('Scholar','Complete 10 Knowledge quests.','📚','{"category":"Knowledge","quests_completed":10}'),
+('Focused','Complete 10 Focus quests.','🎯','{"category":"Focus","quests_completed":10}'),
+('Collector','Acquire 5 pieces of equipment.','💎','{"equipment":5}'),
+('Legend','Reach level 20.','🛡️','{"level":20}'),
+('Champion','Earn 10000 total XP.','👑','{"xp":10000}')
+on conflict (name) do nothing;
+
+insert into public.gacha_items(name,description,icon,rarity,color,weight) values
+('Crown of Legends','+50 XP for 24 hours','👑','LEGENDARY','#F5C842',2),
+('Orb of Clarity','+20% XP on Focus tasks','🔮','EPIC','#9B72E8',5),
+('Blade of Focus','+15% Focus when equipped','🗡️','RARE','#7B9FD4',12),
+('Tome of Wisdom','Gain +5 Knowledge XP daily','📜','UNCOMMON','#4ADE80',25),
+('Energy Elixir','Restore 20 Energy points','🧪','COMMON','#9ca3af',40),
+('Shield of Discipline','Protect streak for 1 day','🛡️','RARE','#7B9FD4',16)
+on conflict (name) do nothing;
+
+create or replace function public.handle_new_user()
+returns trigger language plpgsql security definer set search_path=public as $$
+begin
+  insert into public.profiles(id,username) values(new.id,coalesce(new.raw_user_meta_data->>'username',split_part(new.email,'@',1))) on conflict (id) do nothing;
+  insert into public.attributes(user_id,name,level,percentage) values
+    (new.id,'Focus',1,0),(new.id,'Discipline',1,0),(new.id,'Creativity',1,0),(new.id,'Energy',1,0),(new.id,'Knowledge',1,0),(new.id,'Resilience',1,0)
+  on conflict (user_id,name) do nothing;
+  return new;
+end; $$;
+
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created after insert on auth.users for each row execute procedure public.handle_new_user();
+
+create or replace function public.complete_quest(p_quest_id bigint)
+returns jsonb language plpgsql security definer set search_path=public as $$
+declare
+  uid uuid := auth.uid(); q public.quests%rowtype; existing public.user_quests%rowtype; p public.profiles%rowtype; new_xp integer; new_level integer; leveled boolean := false;
+begin
+  if uid is null then raise exception 'Not authenticated'; end if;
+  select * into q from public.quests where id=p_quest_id and active=true;
+  if not found then raise exception 'Quest not found'; end if;
+  select * into existing from public.user_quests where user_id=uid and quest_id=p_quest_id;
+  if found and existing.status='completed' then raise exception 'Quest already completed'; end if;
+  select * into p from public.profiles where id=uid for update;
+  new_xp := p.total_xp + q.xp_reward;
+  new_level := p.level;
+  while new_xp >= p.xp_to_next_level loop
+    new_xp := new_xp - p.xp_to_next_level;
+    new_level := new_level + 1;
+    p.xp_to_next_level := greatest(500, round(p.xp_to_next_level * 1.15));
+    leveled := true;
+  end loop;
+  update public.profiles set level=new_level,total_xp=p.total_xp+q.xp_reward,xp_in_level=new_xp,xp_to_next_level=p.xp_to_next_level,updated_at=now() where id=uid;
+  insert into public.user_quests(user_id,quest_id,status,progress,started_at,completed_at,xp_earned) values(uid,p_quest_id,'completed',100,coalesce(existing.started_at,now()),now(),q.xp_reward)
+  on conflict(user_id,quest_id) do update set status='completed',progress=100,completed_at=now(),xp_earned=q.xp_reward;
+  return jsonb_build_object('xpEarned',q.xp_reward,'totalXp',p.total_xp+q.xp_reward,'level',new_level,'leveledUp',leveled);
+end; $$;
+
+grant execute on function public.complete_quest(bigint) to authenticated;
+
+alter table public.profiles enable row level security;
+alter table public.attributes enable row level security;
+alter table public.quests enable row level security;
+alter table public.quest_checklist_items enable row level security;
+alter table public.user_quests enable row level security;
+alter table public.skills enable row level security;
+alter table public.user_skills enable row level security;
+alter table public.equipment enable row level security;
+alter table public.user_equipment enable row level security;
+alter table public.achievements enable row level security;
+alter table public.user_achievements enable row level security;
+alter table public.gacha_items enable row level security;
+alter table public.gacha_history enable row level security;
+
+create policy "own profile select" on public.profiles for select to authenticated using(auth.uid()=id);
+create policy "own profile update" on public.profiles for update to authenticated using(auth.uid()=id) with check(auth.uid()=id);
+create policy "own attributes select" on public.attributes for select to authenticated using(auth.uid()=user_id);
+create policy "own attributes update" on public.attributes for update to authenticated using(auth.uid()=user_id) with check(auth.uid()=user_id);
+create policy "active quests read" on public.quests for select to authenticated using(active=true);
+create policy "checklist read" on public.quest_checklist_items for select to authenticated using(true);
+create policy "own user quests" on public.user_quests for select to authenticated using(auth.uid()=user_id);
+create policy "own skills" on public.user_skills for select to authenticated using(auth.uid()=user_id);
+create policy "skills read" on public.skills for select to authenticated using(true);
+create policy "equipment read" on public.equipment for select to authenticated using(true);
+create policy "own equipment" on public.user_equipment for select to authenticated using(auth.uid()=user_id);
+create policy "achievements read" on public.achievements for select to authenticated using(true);
+create policy "own achievements" on public.user_achievements for select to authenticated using(auth.uid()=user_id);
+create policy "gacha read" on public.gacha_items for select to authenticated using(true);
+create policy "own gacha history" on public.gacha_history for select to authenticated using(auth.uid()=user_id);
