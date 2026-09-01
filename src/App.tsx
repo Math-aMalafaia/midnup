@@ -30,70 +30,36 @@ function App() {
 
   const openQuest = (id: string) => {
     const quest = QUESTS[id]
-    if (quest) {
-      setSelectedQuest({ ...quest, checklist: quest.checklist ? [...quest.checklist] : undefined })
-      setScreen('detail')
-    }
+    if (!quest) return
+    setSelectedQuest({ ...quest, checklist: quest.checklist ? [...quest.checklist] : undefined })
+    setScreen('detail')
   }
 
   const completeQuest = () => {
     if (!selectedQuest) return
-    setPlayer((current) => ({
-      ...current,
-      totalXP: current.totalXP + selectedQuest.xp,
-      xpInLevel: Math.min(current.xpInLevel + selectedQuest.xp, current.xpToNextLevel),
-      completionRate: Math.min(100, current.completionRate + 1),
-    }))
+    setPlayer(current => ({ ...current, totalXP: current.totalXP + selectedQuest.xp, xpInLevel: Math.min(current.xpInLevel + selectedQuest.xp, current.xpToNextLevel), completionRate: Math.min(100, current.completionRate + 1) }))
     setSelectedQuest(null)
     setScreen('home')
     setPopup(true)
     window.setTimeout(() => setPopup(false), 3800)
   }
 
-  const activeNav = useMemo(() => {
-    if (screen === 'home' || screen === 'attributes' || screen === 'mentor' || screen === 'equipment' || screen === 'profile') return screen
-    return null
-  }, [screen])
+  const activeNav = useMemo(() => ['home', 'attributes', 'mentor', 'equipment', 'profile'].includes(screen) ? screen : null, [screen])
 
-  return (
-    <main className="app-shell">
-      <div className="phone-frame" data-theme={dark ? undefined : 'light'}>
-        {screen === 'splash' && <Splash />}
-        {screen === 'login' && (
-          <Login
-            authLogin={authLogin}
-            onToggleMode={() => setAuthLogin((value) => !value)}
-            onEnter={() => setScreen('home')}
-          />
-        )}
-        {screen === 'home' && <Home player={player} onQuest={openQuest} onMentor={() => setScreen('mentor')} />}
-        {screen === 'attributes' && <Attributes player={player} />}
-        {screen === 'skills' && <Skills />}
-        {screen === 'equipment' && <Equipment />}
-        {screen === 'profile' && <Profile player={player} />}
-        {screen === 'gacha' && <Gacha />}
-        {screen === 'settings' && (
-          <Settings dark={dark} onToggleTheme={() => setDark((value) => !value)} onSignOut={() => setScreen('login')} />
-        )}
-        {screen === 'detail' && selectedQuest && (
-          <QuestDetail quest={selectedQuest} onBack={() => setScreen('home')} onComplete={completeQuest} />
-        )}
-        {screen === 'mentor' && <Mentor player={player} onBack={() => setScreen('home')} />}
-
-        {popup && <AchievementPopup />}
-
-        {activeNav && (
-          <BottomNav
-            active={activeNav}
-            onNavigate={(target) => setScreen(target)}
-            onMore={() => setScreen('skills')}
-          />
-        )}
-      </div>
-      <div className="prototype-caption">MindUp · Interactive Prototype</div>
-      <div className="prototype-subcaption">Gamified personal development · React + Vite</div>
-    </main>
-  )
+  return <main className="app-shell"><div className="phone-frame" data-theme={dark ? undefined : 'light'}>
+    {screen === 'splash' && <Splash />}
+    {screen === 'login' && <Login authLogin={authLogin} onToggleMode={() => setAuthLogin(v => !v)} onEnter={() => setScreen('home')} />}
+    {screen === 'home' && <Home player={player} onQuest={openQuest} onMentor={() => setScreen('mentor')} />}
+    {screen === 'attributes' && <Attributes player={player} />}
+    {screen === 'skills' && <Skills />}
+    {screen === 'equipment' && <Equipment />}
+    {screen === 'profile' && <Profile player={player} />}
+    {screen === 'gacha' && <Gacha />}
+    {screen === 'settings' && <Settings dark={dark} onToggleTheme={() => setDark(v => !v)} onSignOut={() => setScreen('login')} />}
+    {screen === 'detail' && selectedQuest && <QuestDetail quest={selectedQuest} onBack={() => setScreen('home')} onComplete={completeQuest} />}
+    {screen === 'mentor' && <Mentor player={player} onBack={() => setScreen('home')} />}
+    {popup && <AchievementPopup />}
+    {activeNav && <BottomNav active={activeNav as Screen} onNavigate={setScreen} />}
+  </div><div className="prototype-caption">MindUp · React + Vite</div></main>
 }
-
 export default App
