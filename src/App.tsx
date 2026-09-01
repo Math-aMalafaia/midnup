@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import './styles/mindup.css'
+import './styles/responsive.css'
 import { Splash } from './components/Splash'
 import { Login } from './components/Login'
 import { BottomNav } from './components/BottomNav'
@@ -44,7 +45,7 @@ function App() {
     window.setTimeout(() => setPopup(false), 3800)
   }
 
-  const activeNav = useMemo(() => ['home', 'attributes', 'mentor', 'equipment', 'profile'].includes(screen) ? screen : null, [screen])
+  const activeNav = useMemo(() => ['home', 'attributes', 'mentor', 'equipment', 'profile'].includes(screen) ? screen as Screen : null, [screen])
 
   return <main className="app-shell"><div className="phone-frame" data-theme={dark ? undefined : 'light'}>
     {screen === 'splash' && <Splash />}
@@ -59,7 +60,7 @@ function App() {
     {screen === 'detail' && selectedQuest && <QuestDetail quest={selectedQuest} onBack={() => setScreen('home')} onComplete={completeQuest} />}
     {screen === 'mentor' && <Mentor player={player} onBack={() => setScreen('home')} />}
     {popup && <AchievementPopup />}
-    {activeNav && <BottomNav active={activeNav as Screen} onNavigate={setScreen} />}
-  </div><div className="prototype-caption">MindUp · React + Vite</div></main>
+    {activeNav && <BottomNav active={activeNav} onNavigate={setScreen} />}
+  </div></main>
 }
 export default App
